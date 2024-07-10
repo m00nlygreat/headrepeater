@@ -26,32 +26,75 @@ print(os.path.isfile(sys.argv[1]))
 f = open(original,"r", encoding='utf8')
 r = f.readlines()
 f.seek(0)
-new_content = []
+processed = []
 
 p = re.compile(f'^{head_level} .+\n$')
 
 for i, line in enumerate(f):
     if line == "---\n":
-        print('horizontal line detected')
-        print(r[i])
+        # print('horizontal line detected')
+        # print(r[i])
         m = p.match(r[i+2])
         if not m:
-            new_content.append(line)
+            processed.append(line)
             for j in range(i, 0, -1):
                 if p.match(r[j]):
-                    new_content.append('\n')
-                    new_content.append(r[j])
+                    processed.append('\n')
+                    processed.append(r[j])
                     break
         else:
-            new_content.append(line)
+            processed.append(line)
     else:
-        new_content.append(line)
+        processed.append(line)
 
-print(new_content)
+# print(processed)
+
+column_seperated = []
+
+tail = -1
+for i, line in enumerate(processed):
+    if line == "***\n":
+        before = []
+        for j in range(i, 0, -1):
+            if p.match(processed[j]) or processed[j] == "---\n":
+                break
+            else:
+                if processed[j]!="***\n":
+                    before.insert(0, processed[j])
+                if j!=i:
+                    column_seperated.pop()
+
+        print(before)
+        column_seperated.append("\n")
+        column_seperated.append("::: {.columns}\n")
+        column_seperated.append("::: {.column}\n")
+
+        for line in before:
+            column_seperated.append(line)
+
+        column_seperated.append(":::\n")
+        column_seperated.append("::: {.column}\n")
+        tail = 0 
+        after = []
+        for j in range(i, len(processed)):
+            if p.match(processed[j]) or processed[j] == "---\n":
+                tail -= 2
+                break
+            else:
+                after.append(processed[j])
+                tail += 1
+        print(tail)
+    else:
+        column_seperated.append(line)
+        if tail == 0:
+            column_seperated.append(":::\n")
+            column_seperated.append(":::\n")
+            column_seperated.append("\n")
+        tail -= 1
 
 n = open(output_path+'\\_'+original, 'w', encoding='utf-8')
 
-for line in new_content:
+for line in column_seperated:
     n.write(line)
 
 f.close()
